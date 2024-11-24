@@ -7,15 +7,17 @@ import (
 	"x/core/internal/service"
 
 	"github.com/clerkinc/clerk-sdk-go/clerk"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 )
 
 type Handler struct {
-	z    *zerolog.Logger
-	s    *service.Service
-	c    clerk.Client
-	conf config.Config
+	z       *zerolog.Logger
+	s       *service.Service
+	c       clerk.Client
+	conf    config.Config
+	monitor *sentryhttp.Handler
 }
 
 func NewHandler(
@@ -23,12 +25,14 @@ func NewHandler(
 	srvc *service.Service,
 	clrk clerk.Client,
 	conf config.Config,
+	m *sentryhttp.Handler,
 ) *Handler {
 	return &Handler{
-		z:    logger,
-		s:    srvc,
-		c:    clrk,
-		conf: conf,
+		z:       logger,
+		s:       srvc,
+		c:       clrk,
+		conf:    conf,
+		monitor: m,
 	}
 }
 
@@ -68,13 +72,17 @@ func (h *Handler) RegisterRoutes() *mux.Router {
 	r.Use(h.LoggerMiddleware)
 	r.Use(h.RateLimiterMiddleware)
 
-	public := r.PathPrefix("/api").Subrouter()
+	// sentry monitoring only for dev+prod environments
+	if h.conf.Env != "local" {
+		r.Use(h.monitor.Handle)
+	}
+
+	api := r.PathPrefix("/api").Subrouter()
 	private := r.PathPrefix("/api").Subrouter()
 
 	private.Use(h.ClerkAuthMiddleware)
 
 	// Probe
-	public.HandleFunc("/probe", h.HTTPHandlerFunc(h.Probe)).Methods("GET")
-
+	api.HandleFunc("/probe", h.HTTPHandlerFunc(h.Probe)).Methods("GET")
 	return r
 }

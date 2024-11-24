@@ -14,6 +14,8 @@ import (
 
 	"github.com/clerkinc/clerk-sdk-go/clerk"
 	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -78,6 +80,28 @@ func runHTTPServer(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// Sentry monitoring
+	if err := sentry.Init(sentry.ClientOptions{
+		EnableTracing:      true,
+		Dsn:                conf.Sentry.DSN,
+		TracesSampleRate:   conf.Sentry.SampleRate,
+		ProfilesSampleRate: conf.Sentry.SampleRate,
+		Environment:        conf.Env,
+	}); err != nil {
+		z.Error().Err(err).Msgf("error initializing sentry monitoring")
+	}
+
+	// Flush buffered events before the program terminates.
+	defer sentry.Flush(2 * time.Second)
+	sentry.CaptureMessage("It works!")
+	sentryHandler := sentryhttp.New(sentryhttp.Options{
+		Repanic:         true,  // Repanic after capturing
+		WaitForDelivery: false, // Don't block requests to send events
+		Timeout:         2 * time.Second,
+	})
+
+	z.Info().Msg("sentry monitoring handler initialized")
+
 	// Clerk (3rd party auth)
 	clerkClient, err := clerk.NewClient(conf.Clerk.APIKey)
 	if err != nil {
@@ -127,6 +151,7 @@ func runHTTPServer(cmd *cobra.Command, args []string) {
 		service,
 		clerkClient,
 		conf,
+		sentryHandler,
 	)
 	router := h.RegisterRoutes()
 	handler := crossOrigin.Handler(router)

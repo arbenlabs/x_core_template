@@ -29,6 +29,11 @@ type Cloudinary struct {
 	APIKey string `mapstructure:"CORE_CLOUDINARY_KEY"`
 }
 
+type Sentry struct {
+	DSN        string  `mapstructure:"CORE_SENTRY_DSN"`
+	SampleRate float64 `mapstructure:"CORE_SENTRY_SAMPLE_RATE"`
+}
+
 type Config struct {
 	Env        string     `mapstructure:"CORE_ENV"`
 	DB         Database   `mapstructure:",squash"`
@@ -42,4 +47,7 @@ type Config struct {
 
 	// Cloudinary
 	Cloudinary Cloudinary `mapstructure:",squash"`
+
+	// Sentry monitoring
+	Sentry Sentry `mapstructure:",squash"`
 }
