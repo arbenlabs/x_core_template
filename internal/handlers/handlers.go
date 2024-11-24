@@ -80,6 +80,7 @@ func (h *Handler) RegisterRoutes() *mux.Router {
 	api := r.PathPrefix("/api").Subrouter()
 	private := r.PathPrefix("/api").Subrouter()
 
+	// clerk authentication for private routes
 	private.Use(h.ClerkAuthMiddleware)
 
 	// Probe
