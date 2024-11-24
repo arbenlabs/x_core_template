@@ -1,0 +1,6 @@
+*.env
+__debug_bin
+.vscode/settings.json
+.vscode
+coverage.out
+coverage_summary
