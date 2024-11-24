@@ -41,5 +41,5 @@ type Config struct {
 	Google GoogleConfig `mapstructure:",squash"`
 
 	// Cloudinary
-	Cloudinary `mapstructure:",squash"`
+	Cloudinary Cloudinary `mapstructure:",squash"`
 }
