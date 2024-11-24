@@ -45,7 +45,7 @@ func init() {
 func runHTTPServer(cmd *cobra.Command, args []string) {
 	// conf validation
 	if conf.HTTPServer.ServerPort == "" {
-		z.Fatal().Msg("server port is not configured")
+		z.Fatal().Msg("Server port is not configured")
 	}
 	if conf.Clerk.APIKey == "" {
 		z.Fatal().Msg("Clerk API key is not configured")
@@ -93,7 +93,8 @@ func runHTTPServer(cmd *cobra.Command, args []string) {
 
 	// Flush buffered events before the program terminates.
 	defer sentry.Flush(2 * time.Second)
-	sentry.CaptureMessage("It works!")
+
+	// Create Sentry Handler for use as http middleware
 	sentryHandler := sentryhttp.New(sentryhttp.Options{
 		Repanic:         true,  // Repanic after capturing
 		WaitForDelivery: false, // Don't block requests to send events
